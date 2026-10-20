@@ -368,12 +368,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ---
 
-## 📄 License
-
-[MIT License](LICENSE) — free for personal, academic, and commercial use.
-
----
-
 ## 🙏 Credits & Acknowledgments
 
 - **Open-Meteo** — free weather API
@@ -390,7 +384,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 ## 👨‍💻 Author
 
 **Javed Miya**  
-🔗 [GitHub](https://github.com/javedmiya23) • [LinkedIn](https://linkedin.com/in/javedmiya23)
+🔗 [GitHub](https://github.com/javedmiya23)
 
 ---
 
