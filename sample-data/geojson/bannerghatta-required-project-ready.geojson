@@ -1,0 +1,213 @@
+{
+  "type": "FeatureCollection",
+  "forest_name": "bannerghatta National Park",
+  "name": "bannerghatta_required_project_ready",
+  "properties": {
+    "dataset_type": "project_ready_required",
+    "source_note": "Approximate AOI based on Bannerghatta National Park, Karnataka, India.",
+    "source_reference": "Bannerghatta National Park geography pages and public coordinate references near 12.80083N, 77.57556E.",
+    "crs_note": "GeoJSON coordinates are longitude, latitude in WGS84."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bannerghatta National Park AOI",
+        "forest_name": "Bannerghatta National Park",
+        "admin_email": "forest-admin@example.com",
+        "vegetation_type": "Dry deciduous forest and scrub woodland",
+        "tree_density": "medium_high",
+        "canopy_density": "moderate",
+        "fuel_load": "medium",
+        "moisture_class": "seasonal_dry",
+        "country": "India",
+        "state": "Karnataka",
+        "district": "Bengaluru Urban / Anekal region",
+        "biome": "Southern Deccan dry deciduous forest",
+        "layer": "forest_boundary"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.53555999999999,
+              12.76583
+            ],
+            [
+              77.61556,
+              12.76583
+            ],
+            [
+              77.61556,
+              12.83583
+            ],
+            [
+              77.53555999999999,
+              12.83583
+            ],
+            [
+              77.53555999999999,
+              12.76583
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "FFS ESP32 Sensor Node",
+        "device_id": "FFS_ESP32_01",
+        "device_type": "esp32",
+        "layer": "sensor",
+        "installation": "fire_watch_node"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.57956,
+          12.79783
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Seasonal Stream Corridor",
+        "layer": "water_bodies",
+        "feature_type": "stream",
+        "hydrology": "seasonal"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.54355999999999,
+            12.77583
+          ],
+          [
+            77.55756,
+            12.78783
+          ],
+          [
+            77.57556,
+            12.79983
+          ],
+          [
+            77.59555999999999,
+            12.81583
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Patrolling Access Track",
+        "layer": "roads_access",
+        "feature_type": "trail",
+        "surface": "forest_track"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.54556,
+            12.78183
+          ],
+          [
+            77.56555999999999,
+            12.795829999999999
+          ],
+          [
+            77.59155999999999,
+            12.81083
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mixed Woodland Patch",
+        "layer": "vegetation_zones",
+        "dominant_trees": [
+          "Sandalwood",
+          "Neem",
+          "Tamarind",
+          "Acacia"
+        ],
+        "canopy_class": "mixed_canopy"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.55156,
+              12.78383
+            ],
+            [
+              77.58555999999999,
+              12.78383
+            ],
+            [
+              77.58555999999999,
+              12.80983
+            ],
+            [
+              77.55156,
+              12.80983
+            ],
+            [
+              77.55156,
+              12.78383
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wildlife Habitat Core",
+        "layer": "wildlife_habitats",
+        "species_focus": [
+          "elephant",
+          "leopard",
+          "sambar deer",
+          "sloth bear"
+        ],
+        "sensitivity": "high"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.58355999999999,
+              12.79383
+            ],
+            [
+              77.60755999999999,
+              12.79383
+            ],
+            [
+              77.60755999999999,
+              12.81983
+            ],
+            [
+              77.58355999999999,
+              12.81983
+            ],
+            [
+              77.58355999999999,
+              12.79383
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

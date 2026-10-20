@@ -1,0 +1,87 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python / Backend
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.angular/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment / Secrets (NEVER commit)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Database
+*.sqlite
+*.db
+*.dump
+
+# Docker
+.docker/
+
+# Large data files (keep samples only)
+sample-data/geojson/*-dense-*.geojson
+*.geojson
+!sample-data/geojson/*-required-*.geojson
+!sample-data/geojson/*-demo-*.geojson
+!sample-data/geojson/*-invalid-*.geojson
+
+# Generated docs
+docs/*.pdf
+
+# Logs
+*.log
+logs/
+
+# OS / temp
+tmp/
+temp/
+*.tmp
+*.temp
+
+# TypeScript cache
+*.tsbuildinfo
+
+# IDE config (optional - uncomment if needed)
+# .vscode/settings.json
+# .vscode/launch.json

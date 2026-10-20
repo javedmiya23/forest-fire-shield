@@ -1,0 +1,290 @@
+<section class="space-y-8">
+  <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+    <div class="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <p class="text-xs uppercase tracking-[0.32em] text-orange-200/65">Prediction Workspace</p>
+      <h1 class="mt-4 font-display text-4xl text-white sm:text-5xl">Fire Simulation Studio</h1>
+      <p class="mt-4 max-w-3xl text-base leading-8 text-stone-300">
+        Run the backend spread model, inspect hour-by-hour fire growth, and present the assumptions behind each scenario with a map-native playback view.
+      </p>
+    </div>
+
+    <section class="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Simulation Run</p>
+          <h2 class="mt-2 font-display text-2xl text-white">Scenario Controls</h2>
+        </div>
+        <a
+          routerLink="/forest/setup"
+          class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:border-orange-300/30 hover:bg-white/10"
+        >
+          Update Forest
+        </a>
+      </div>
+
+      <form class="mt-5 grid gap-4 md:grid-cols-3" [formGroup]="runForm" (ngSubmit)="runSimulation()">
+        <label class="text-sm text-stone-200">
+          <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Hours</span>
+          <input formControlName="hours" type="number" min="1" max="24" class="field-input" />
+        </label>
+        <label class="text-sm text-stone-200">
+          <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Cell Size (m)</span>
+          <input formControlName="cell_size_m" type="number" min="15" max="250" class="field-input" />
+        </label>
+        <label class="flex items-end gap-3 rounded-[1.4rem] border border-white/10 bg-[#08151d]/70 px-4 py-3 text-sm text-stone-200">
+          <input formControlName="force_weather_refresh" type="checkbox" class="h-4 w-4 rounded border-white/20 bg-transparent" />
+          Refresh weather before run
+        </label>
+
+        <button
+          type="submit"
+          class="md:col-span-3 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-900/30 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="running()"
+        >
+          {{ running() ? 'Running Simulation...' : 'Run Simulation' }}
+        </button>
+      </form>
+    </section>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm text-red-50">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-sm text-stone-300 backdrop-blur-xl">
+      Loading forest context and latest simulation...
+    </section>
+  } @else if (!forest()) {
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+      <h2 class="font-display text-2xl text-white">Forest Context Required</h2>
+      <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-300">
+        Save or upload a forest map first. The simulation engine needs the forest boundary, sensor point, and ecological context before it can generate hourly spread polygons.
+      </p>
+      <a
+        routerLink="/forest/setup"
+        class="mt-6 inline-flex rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 px-5 py-3 text-sm font-semibold text-slate-950"
+      >
+        Create Forest Map
+      </a>
+    </section>
+  } @else {
+    <div class="space-y-6">
+      <app-simulation-reel [forest]="forest()" [simulation]="simulation()"></app-simulation-reel>
+
+      <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div class="space-y-6">
+          <app-forest-map
+            [title]="compatibleSimulation()?.id ? 'Predicted Burn Envelope' : 'Forest Simulation Map'"
+            [boundaryGeojson]="forest()?.boundary_geojson ?? null"
+            [sourceGeojson]="forest()?.source_geojson ?? null"
+            [overlayGeojson]="selectedStep()?.affected_geojson ?? null"
+            [sensorLocation]="effectiveSensorLocation()"
+            [windDirection]="effectiveWindDirection()"
+            [allowFullscreen]="true"
+          ></app-forest-map>
+
+          <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Playback</p>
+                <h2 class="mt-2 font-display text-2xl text-white">Hour-by-Hour Spread</h2>
+              </div>
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:border-orange-300/30 hover:bg-white/10 disabled:opacity-50"
+                  [disabled]="!steps().length"
+                  (click)="togglePlayback()"
+                >
+                  {{ playing() ? 'Pause Playback' : 'Play Timeline' }}
+                </button>
+                <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+                  {{ playbackProgress() }}% complete
+                </span>
+              </div>
+            </div>
+
+            @if (selectedStep(); as step) {
+              <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Selected Step</p>
+                    <h3 class="mt-2 font-display text-3xl text-white">Hour {{ step.hour_offset }}</h3>
+                  </div>
+                  <div class="flex flex-wrap gap-3">
+                    <span class="rounded-full border border-red-300/20 bg-red-400/10 px-3 py-1 text-xs text-red-50">
+                      {{ step.estimated_area_m2 | number:'1.0-0' }} m2 affected
+                    </span>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+                      Heading {{ formatHeading(step.spread_heading) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid gap-4 md:grid-cols-3">
+                  <article class="weather-card">
+                    <p class="weather-label">Intensity</p>
+                    <p class="weather-value">{{ step.intensity_score }}</p>
+                  </article>
+                  <article class="weather-card">
+                    <p class="weather-label">Active Cells</p>
+                    <p class="weather-value">{{ step.active_cells }}</p>
+                  </article>
+                  <article class="weather-card">
+                    <p class="weather-label">Burnt Cells</p>
+                    <p class="weather-value">{{ step.burnt_cells }}</p>
+                  </article>
+                </div>
+              </div>
+            } @else {
+              <p class="mt-4 text-sm leading-7 text-stone-300">
+                Run the simulation once to populate hourly spread polygons and playback controls.
+              </p>
+            }
+
+            @if (steps().length) {
+              <div class="mt-6 flex flex-wrap gap-3">
+                @for (step of steps(); track step.hour_offset) {
+                  <button
+                    type="button"
+                    class="rounded-full border px-4 py-2 text-sm transition"
+                    [class]="selectedHour() === step.hour_offset ? 'border-orange-300/30 bg-orange-300/15 text-orange-50' : 'border-white/10 bg-white/5 text-stone-300 hover:text-white'"
+                    (click)="selectHour(step.hour_offset)"
+                  >
+                    Hour {{ step.hour_offset }}
+                  </button>
+                }
+              </div>
+
+              <div class="mt-6 space-y-3">
+                @for (step of steps(); track step.hour_offset) {
+                  <button
+                    type="button"
+                    class="grid w-full gap-3 rounded-[1.3rem] border p-4 text-left transition md:grid-cols-[auto_1fr_auto_auto]"
+                    [class]="selectedHour() === step.hour_offset ? 'border-orange-300/30 bg-orange-300/10' : 'border-white/10 bg-[#08151d]/70 hover:border-white/20'"
+                    (click)="selectHour(step.hour_offset)"
+                  >
+                    <div class="text-sm font-semibold text-white">Hour {{ step.hour_offset }}</div>
+                    <div class="flex items-center">
+                      <div class="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                        <div
+                          class="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-300 to-red-400"
+                          [style.width.%]="stepAreaPercent(step)"
+                        ></div>
+                      </div>
+                    </div>
+                    <div class="text-sm text-stone-200">{{ step.estimated_area_m2 | number:'1.0-0' }} m2</div>
+                    <div class="text-xs uppercase tracking-[0.22em] text-stone-400">{{ formatHeading(step.spread_heading) }}</div>
+                  </button>
+                }
+              </div>
+            }
+          </section>
+        </div>
+
+        <div class="space-y-6">
+          <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Model Assumptions</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Explainable Simulation Inputs</h2>
+
+            @if (simulation(); as sim) {
+              <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <article class="weather-card">
+                  <p class="weather-label">Model</p>
+                  <p class="weather-value text-2xl">{{ sim.assumptions.model_version }}</p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Mode</p>
+                  <p class="weather-value text-2xl">{{ sim.assumptions.simulation_mode }}</p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Fuel Factor</p>
+                  <p class="weather-value text-2xl">{{ sim.assumptions.fuel_factor | number:'1.2-2' }}</p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Weather Factor</p>
+                  <p class="weather-value text-2xl">{{ sim.assumptions.weather_factor | number:'1.2-2' }}</p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Severity Factor</p>
+                  <p class="weather-value text-2xl">{{ sim.assumptions.severity_factor | number:'1.2-2' }}</p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Wind Push</p>
+                  <p class="weather-value text-2xl">{{ formatHeading(sim.assumptions.wind_push_direction) }}</p>
+                </article>
+              </div>
+
+              <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Guide Notes</p>
+                <div class="mt-4 space-y-3">
+                  @for (note of sim.assumptions.notes; track note) {
+                    <p class="text-sm leading-7 text-stone-300">{{ note }}</p>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="mt-4 text-sm leading-7 text-stone-300">
+                Run a simulation to see the model assumptions and explainability notes.
+              </p>
+            }
+          </section>
+
+          <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p class="text-xs uppercase tracking-[0.26em] text-sky-200/60">Weather Snapshot</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Context Used For Run</h2>
+
+            @if (simulation()?.weather; as weather) {
+              <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <article class="weather-card">
+                  <p class="weather-label">Temperature</p>
+                  <p class="weather-value">{{ weather.temperature ?? '--' }}<span class="text-base"> C</span></p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Humidity</p>
+                  <p class="weather-value">{{ weather.relative_humidity ?? '--' }}<span class="text-base">%</span></p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Wind Speed</p>
+                  <p class="weather-value">{{ weather.wind_speed ?? '--' }}<span class="text-base"> km/h</span></p>
+                </article>
+                <article class="weather-card">
+                  <p class="weather-label">Wind Direction</p>
+                  <p class="weather-value">{{ weather.wind_direction ?? '--' }}<span class="text-base"> deg</span></p>
+                </article>
+              </div>
+            } @else {
+              <p class="mt-4 text-sm leading-7 text-stone-300">
+                No weather snapshot is attached yet. The next simulation run will pull one automatically from the backend.
+              </p>
+            }
+          </section>
+
+          <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Ignition Context</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Source Of Spread</h2>
+
+            @if (simulation(); as sim) {
+              <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Ignition Point</p>
+                <p class="mt-3 text-sm text-stone-200">
+                  {{ sim.ignition_point.latitude | number:'1.4-4' }}, {{ sim.ignition_point.longitude | number:'1.4-4' }}
+                </p>
+                <p class="mt-3 text-sm text-stone-300">
+                  Device {{ sim.device_id || 'unlinked' }} using model {{ sim.model_version }}.
+                </p>
+              </div>
+            } @else {
+              <p class="mt-4 text-sm leading-7 text-stone-300">
+                Once you run the model, this panel will show the ignition coordinates and linked device.
+              </p>
+            }
+          </section>
+        </div>
+      </div>
+    </div>
+  }
+</section>

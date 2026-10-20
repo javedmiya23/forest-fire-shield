@@ -1,0 +1,91 @@
+<div class="relative min-h-screen overflow-x-hidden text-stone-100">
+  <div class="pointer-events-none fixed inset-0 opacity-90">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(251,146,60,0.18),_transparent_28%),linear-gradient(180deg,_#041116_0%,_#071820_42%,_#031015_100%)]"></div>
+    <div class="noise-mask absolute inset-0"></div>
+    <div class="absolute -left-24 top-32 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl"></div>
+    <div class="absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10">
+    <header class="sticky top-0 z-30 border-b border-white/10 bg-[#041018]/75 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <a routerLink="/" class="flex items-center gap-3" (click)="closeMenu()">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-orange-400/20 bg-gradient-to-br from-orange-400/20 to-emerald-400/20 shadow-lg shadow-orange-900/20">
+            <span class="font-display text-lg text-orange-100">FF</span>
+          </div>
+          <div>
+            <p class="font-display text-lg tracking-wide text-white">Forest Fire Shield</p>
+            <p class="text-xs uppercase tracking-[0.3em] text-emerald-200/60">Wildfire Intelligence Suite</p>
+          </div>
+        </a>
+
+        <nav class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 md:flex">
+          @for (item of navigation; track item.path) {
+            <a
+              #desktopLink="routerLinkActive"
+              [routerLink]="item.path"
+              routerLinkActive
+              [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+              class="rounded-full px-4 py-2 text-sm transition duration-200"
+              [class]="desktopLink.isActive
+                ? 'bg-gradient-to-r from-orange-300 to-amber-200 font-semibold text-slate-900 shadow-lg'
+                : 'text-stone-300 hover:bg-white/5 hover:text-white'"
+            >
+              {{ item.label }}
+            </a>
+          }
+        </nav>
+
+        <div class="hidden items-center gap-3 md:flex">
+          <a
+            routerLink="/forest/setup"
+            class="rounded-full border border-white/15 px-4 py-2 text-sm text-stone-200 transition hover:border-orange-300/40 hover:text-white"
+          >
+            Create Forest Map
+          </a>
+          <a
+            routerLink="/dashboard"
+            class="rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-700/30 transition hover:translate-y-[-1px]"
+          >
+            Open Control Room
+          </a>
+        </div>
+
+        <button
+          type="button"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white md:hidden"
+          (click)="toggleMenu()"
+        >
+          <span class="sr-only">Toggle menu</span>
+          <span class="text-xl">{{ menuOpen() ? 'X' : '=' }}</span>
+        </button>
+      </div>
+
+      @if (menuOpen()) {
+        <div class="border-t border-white/10 bg-[#06131a]/95 px-4 py-4 md:hidden">
+          <nav class="flex flex-col gap-2">
+            @for (item of navigation; track item.path) {
+              <a
+                #mobileLink="routerLinkActive"
+                [routerLink]="item.path"
+                [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+                routerLinkActive
+                class="rounded-2xl border px-4 py-3 text-sm transition duration-200"
+                [class]="mobileLink.isActive
+                  ? 'border-orange-300/40 bg-orange-400/10 font-semibold text-orange-100'
+                  : 'border-transparent text-stone-300 hover:border-white/10 hover:bg-white/5 hover:text-white'"
+                (click)="closeMenu()"
+              >
+                {{ item.label }}
+              </a>
+            }
+          </nav>
+        </div>
+      }
+    </header>
+
+    <main class="mx-auto max-w-[1400px] px-4 pb-16 pt-8 sm:px-6 lg:px-8 lg:pt-10">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

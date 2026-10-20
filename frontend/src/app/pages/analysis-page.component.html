@@ -1,0 +1,251 @@
+<section class="space-y-8">
+  <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+    <div class="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <p class="text-xs uppercase tracking-[0.32em] text-orange-200/65">Post-Fire Intelligence</p>
+      <h1 class="mt-4 font-display text-4xl text-white sm:text-5xl">Impact Analysis Studio</h1>
+      <p class="mt-4 max-w-3xl text-base leading-8 text-stone-300">
+        Convert fire events and spread simulations into an explainable ecological impact estimate with vegetation, habitat, and sensor evidence in one workspace.
+      </p>
+    </div>
+
+    <section class="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Analysis Engine</p>
+          <h2 class="mt-2 font-display text-2xl text-white">Generate Impact Report</h2>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-stone-300">
+            The backend combines the latest fire event, simulation footprint, forest attributes, and sensor severity to produce a defendable impact estimate.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            routerLink="/simulation"
+            class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:border-orange-300/30 hover:bg-white/10"
+          >
+            Open Simulation
+          </a>
+          <button
+            type="button"
+            class="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-50 transition hover:border-emerald-300/45 hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="!analysis()"
+            (click)="downloadPdfReport()"
+          >
+            Download PDF Report
+          </button>
+          <button
+            type="button"
+            class="rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-900/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="generating() || !forest()"
+            (click)="generateAnalysis()"
+          >
+            {{ generating() ? 'Generating Report...' : 'Generate Analysis' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm text-red-50">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-sm text-stone-300 backdrop-blur-xl">
+      Loading forest context, simulation output, and the latest analysis report...
+    </section>
+  } @else if (!forest()) {
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+      <h2 class="font-display text-2xl text-white">Forest Context Required</h2>
+      <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-300">
+        Upload or build the forest map first so analysis can measure the impacted area against the real forest boundary and ecological metadata.
+      </p>
+      <a
+        routerLink="/forest/setup"
+        class="mt-6 inline-flex rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 px-5 py-3 text-sm font-semibold text-slate-950"
+      >
+        Create Forest Map
+      </a>
+    </section>
+  } @else {
+    <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div class="space-y-6">
+        <app-forest-map
+          [title]="analysis()?.impact_level ? 'Estimated Impact Footprint' : 'Awaiting Analysis Overlay'"
+          [boundaryGeojson]="forest()?.boundary_geojson ?? null"
+          [sourceGeojson]="forest()?.source_geojson ?? null"
+          [overlayGeojson]="impactedOverlay()"
+          [sensorLocation]="forest()?.sensor_location ?? null"
+        ></app-forest-map>
+
+        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Analysis Summary</p>
+              <h2 class="mt-2 font-display text-2xl text-white">
+                {{ analysis()?.forest_name || forest()?.name || 'Forest Impact Report' }}
+              </h2>
+            </div>
+
+            @if (analysis()) {
+              <span [class]="impactLevelClass()">
+                {{ analysis()?.impact_level | titlecase }} impact
+              </span>
+            }
+          </div>
+
+          @if (analysis(); as report) {
+            <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Executive Summary</p>
+              <p class="mt-4 text-sm leading-8 text-stone-200">
+                {{ report.summary_text }}
+              </p>
+              <div class="mt-5 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  class="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-50 transition hover:border-emerald-300/45 hover:bg-emerald-400/20"
+                  (click)="downloadPdfReport()"
+                >
+                  Export This Report As PDF
+                </button>
+                <span class="text-xs uppercase tracking-[0.22em] text-stone-400">
+                  Backend-generated for consistent demo and viva output
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <article class="metric-card">
+                <p class="metric-label">Burnt Area</p>
+                <p class="metric-value text-3xl">{{ report.estimated_burnt_area_m2 ?? 0 | number:'1.0-0' }}</p>
+                <p class="metric-subtext">Estimated impacted area in m2.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">Burn Ratio</p>
+                <p class="metric-value text-3xl">
+                  {{ ((report.estimated_burn_ratio ?? 0) * 100) | number:'1.0-1' }}%
+                </p>
+                <p class="metric-subtext">Share of mapped forest footprint affected.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">Vegetation Loss</p>
+                <p class="metric-value text-3xl">{{ report.vegetation_loss_score }}</p>
+                <p class="metric-subtext">Composite vegetation stress estimate.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">Habitat Impact</p>
+                <p class="metric-value text-3xl">{{ report.habitat_impact_score }}</p>
+                <p class="metric-subtext">Wildlife disturbance estimate from spread + habitat layers.</p>
+              </article>
+            </div>
+
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+              <article class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Vegetation Impact</p>
+                <p class="mt-4 text-sm leading-7 text-stone-200">{{ report.likely_vegetation_damage }}</p>
+              </article>
+
+              <article class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/75 p-5">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Wildlife Impact</p>
+                <p class="mt-4 text-sm leading-7 text-stone-200">{{ report.likely_wildlife_impact }}</p>
+              </article>
+            </div>
+          } @else {
+            <p class="mt-4 text-sm leading-7 text-stone-300">
+              No analysis report has been generated yet. Run the analysis once to produce an ecological impact summary from the latest fire event and simulation.
+            </p>
+          }
+        </section>
+      </div>
+
+      <div class="space-y-6">
+        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <p class="text-xs uppercase tracking-[0.26em] text-sky-200/60">Event Metrics</p>
+          <h2 class="mt-2 font-display text-2xl text-white">Fire Evidence Snapshot</h2>
+
+          @if (analysis(); as report) {
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+              <article class="weather-card">
+                <p class="weather-label">Status</p>
+                <p class="weather-value text-2xl">{{ report.report_status | titlecase }}</p>
+              </article>
+              <article class="weather-card">
+                <p class="weather-label">Peak Severity</p>
+                <p class="weather-value text-2xl">{{ report.peak_severity ?? '--' }}</p>
+              </article>
+              <article class="weather-card">
+                <p class="weather-label">Average Severity</p>
+                <p class="weather-value text-2xl">{{ report.average_severity ?? '--' }}</p>
+              </article>
+              <article class="weather-card">
+                <p class="weather-label">Alarm Packets</p>
+                <p class="weather-value text-2xl">{{ report.alarm_packet_count }}</p>
+              </article>
+              <article class="weather-card">
+                <p class="weather-label">Duration</p>
+                <p class="weather-value text-2xl">{{ report.event_duration_minutes ?? '--' }}</p>
+                <p class="metric-subtext">Minutes from start to last known event boundary.</p>
+              </article>
+              <article class="weather-card">
+                <p class="weather-label">Spread Heading</p>
+                <p class="weather-value text-2xl">{{ report.spread_heading ?? '--' }}</p>
+                <p class="metric-subtext">Degrees based on final simulated drift.</p>
+              </article>
+            </div>
+          } @else {
+            <p class="mt-4 text-sm leading-7 text-stone-300">
+              This panel will fill in after the first impact report is generated.
+            </p>
+          }
+        </section>
+
+        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Sensor Peaks</p>
+          <h2 class="mt-2 font-display text-2xl text-white">Evidence From MQ Channels</h2>
+
+          @if (analysis()?.sensor_peaks?.length) {
+            <div class="mt-5 space-y-3">
+              @for (peak of analysis()!.sensor_peaks; track peak.sensor) {
+                <article class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold text-white">{{ peak.sensor }}</p>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+                      {{ peak.digital_trigger_count }} digital trips
+                    </span>
+                  </div>
+                  <p class="mt-4 text-3xl font-semibold text-white">{{ peak.max_analog }}</p>
+                  <p class="mt-2 text-xs uppercase tracking-[0.22em] text-stone-400">Maximum analog reading captured during the event</p>
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="mt-4 text-sm leading-7 text-stone-300">
+              Sensor peak summaries will appear after analysis is generated.
+            </p>
+          }
+        </section>
+
+        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Recommended Actions</p>
+          <h2 class="mt-2 font-display text-2xl text-white">Guide-Ready Follow Up</h2>
+
+          @if (analysis()?.recommended_actions?.length) {
+            <div class="mt-5 space-y-3">
+              @for (action of analysis()!.recommended_actions; track action) {
+                <article class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4 text-sm leading-7 text-stone-200">
+                  {{ action }}
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="mt-4 text-sm leading-7 text-stone-300">
+              Generate the report to receive recommended follow-up actions and review guidance.
+            </p>
+          }
+        </section>
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,211 @@
+{
+  "type": "FeatureCollection",
+  "forest_name": "Amazon Forest AOI",
+  "name": "amazon_ducke_required_project_ready",
+  "properties": {
+    "dataset_type": "project_ready_required",
+    "source_note": "Approximate AOI based on Reserva Florestal Adolpho Ducke, Manaus, Amazonas, Brazil.",
+    "source_reference": "PPBio/INPA and PELD Ducke public reserve descriptions (10 km x 10 km reserve near Manaus).",
+    "crs_note": "GeoJSON coordinates are longitude, latitude in WGS84."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Reserva Florestal Adolpho Ducke AOI",
+        "forest_name": "Reserva Florestal Adolpho Ducke",
+        "admin_email": "forest-admin@example.com",
+        "vegetation_type": "Dense humid terra firme tropical rainforest",
+        "tree_density": "high",
+        "canopy_density": "dense",
+        "fuel_load": "medium_high",
+        "moisture_class": "humid",
+        "country": "Brazil",
+        "state": "Amazonas",
+        "municipality": "Manaus",
+        "biome": "Amazon Rainforest",
+        "layer": "forest_boundary"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -59.974778,
+              -3.0066669999999998
+            ],
+            [
+              -59.88077800000001,
+              -3.0066669999999998
+            ],
+            [
+              -59.88077800000001,
+              -2.916667
+            ],
+            [
+              -59.974778,
+              -2.916667
+            ],
+            [
+              -59.974778,
+              -3.0066669999999998
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "FFS ESP32 Sensor Node",
+        "device_id": "FFS_ESP32_01",
+        "device_type": "esp32",
+        "layer": "sensor",
+        "installation": "canopy_edge_station"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -59.921778,
+          -2.965667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Puraquequara Drainage Segment",
+        "layer": "water_bodies",
+        "feature_type": "stream",
+        "hydrology": "perennial"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -59.964778,
+            -2.9906669999999997
+          ],
+          [
+            -59.944778,
+            -2.9756669999999996
+          ],
+          [
+            -59.919778,
+            -2.956667
+          ],
+          [
+            -59.894778,
+            -2.940667
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Research Access Track",
+        "layer": "roads_access",
+        "feature_type": "trail",
+        "surface": "compacted_soil"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -59.962778,
+            -2.9866669999999997
+          ],
+          [
+            -59.934778,
+            -2.968667
+          ],
+          [
+            -59.908778,
+            -2.9516669999999996
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Primary Vegetation Zone",
+        "layer": "vegetation_zones",
+        "dominant_trees": [
+          "Bertholletia excelsa",
+          "Eschweilera coriacea",
+          "Protium apiculatum"
+        ],
+        "canopy_class": "closed_canopy"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -59.956778,
+              -2.984667
+            ],
+            [
+              -59.914778,
+              -2.984667
+            ],
+            [
+              -59.914778,
+              -2.948667
+            ],
+            [
+              -59.956778,
+              -2.948667
+            ],
+            [
+              -59.956778,
+              -2.984667
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wildlife Habitat Core",
+        "layer": "wildlife_habitats",
+        "species_focus": [
+          "jaguar",
+          "harpy eagle",
+          "woolly monkey"
+        ],
+        "sensitivity": "high"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -59.924778,
+              -2.976667
+            ],
+            [
+              -59.892778,
+              -2.976667
+            ],
+            [
+              -59.892778,
+              -2.944667
+            ],
+            [
+              -59.924778,
+              -2.944667
+            ],
+            [
+              -59.924778,
+              -2.976667
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

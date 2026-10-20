@@ -1,0 +1,464 @@
+<section class="space-y-8">
+  <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+    <div class="rounded-[2.2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.32em] text-orange-200/65">Live Control Room</p>
+          <h1 class="mt-4 font-display text-4xl text-white sm:text-5xl">Sensor + Weather Dashboard</h1>
+          <p class="mt-4 max-w-3xl text-base leading-8 text-stone-300">
+            Unified visibility into device health, latest sensor packet, forest-linked weather, and the signal history your simulation layer will build on.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <span [class]="liveTransportTone()">
+            {{ liveTransportLabel() }}
+          </span>
+          <span [class]="observabilityTone()">
+            {{ observability()?.enabled ? 'OpenTelemetry Active' : 'Telemetry Standby' }}
+          </span>
+          <button
+            type="button"
+            class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:border-orange-300/30 hover:bg-white/10"
+            (click)="manualRefresh()"
+          >
+            Refresh Now
+          </button>
+          <a
+            routerLink="/forest/setup"
+            class="rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-900/20"
+          >
+            Update Forest Context
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <article class="metric-card">
+        <p class="metric-label">Device Status</p>
+        <p class="metric-value">{{ prettyStatus(summary()?.device_status?.status) }}</p>
+        <p class="metric-subtext">{{ statusSummaryText() }}</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">24h Readings</p>
+        <p class="metric-value">{{ summary()?.metrics?.readings_last_24h ?? 0 }}</p>
+        <p class="metric-subtext">Total packets saved in PostgreSQL during the last 24 hours.</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">Peak Severity</p>
+        <p class="metric-value">{{ summary()?.metrics?.max_severity_last_24h ?? 0 }}</p>
+        <p class="metric-subtext">Highest derived severity score during the last 24 hours.</p>
+      </article>
+      <article class="metric-card">
+        <p class="metric-label">Alarm Packets</p>
+        <p class="metric-value">{{ summary()?.metrics?.alarm_readings_last_24h ?? 0 }}</p>
+        <p class="metric-subtext">Packets where the backend classified the state as alarm.</p>
+      </article>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm text-red-50">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <div class="space-y-6">
+      <app-forest-map
+        [title]="forest()?.name ? forest()!.name + ' Live Map' : 'Forest Map'"
+        [boundaryGeojson]="forest()?.boundary_geojson ?? null"
+        [sensorLocation]="forest()?.sensor_location ?? null"
+        [windDirection]="summary()?.weather?.wind_direction ?? null"
+      ></app-forest-map>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Live Severity Trend</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Signal Pulse Overview</h2>
+            <p class="mt-3 max-w-2xl text-sm leading-7 text-stone-300">
+              A quick visual read of the most recent sensor packets, showing how fast severity is rising, where alarm packets appear, and which trigger type dominates the latest window.
+            </p>
+          </div>
+          <span [class]="severityDeltaTone()">
+            {{ severityDeltaLabel() }}
+          </span>
+        </div>
+
+        @if (orderedHistory().length) {
+          <div class="mt-6 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+            <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/78 p-4">
+              <div class="overflow-hidden rounded-[1.2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,21,29,0.94),rgba(8,21,29,0.76))] px-3 py-4">
+                <svg viewBox="0 0 100 42" class="h-52 w-full">
+                  <line x1="0" y1="7" x2="100" y2="7" stroke="rgba(255,255,255,0.08)" stroke-width="0.4"></line>
+                  <line x1="0" y1="21" x2="100" y2="21" stroke="rgba(255,255,255,0.08)" stroke-width="0.4"></line>
+                  <line x1="0" y1="35" x2="100" y2="35" stroke="rgba(255,255,255,0.08)" stroke-width="0.4"></line>
+                  @if (severityTrend().area) {
+                    <polygon
+                      [attr.points]="severityTrend().area"
+                      fill="rgba(251, 146, 60, 0.12)"
+                    ></polygon>
+                    <polyline
+                      [attr.points]="severityTrend().polyline"
+                      fill="none"
+                      stroke="rgba(251, 146, 60, 0.95)"
+                      stroke-width="1.1"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></polyline>
+                  }
+                  @for (point of severityTrend().points; track point.reading.id) {
+                    <circle
+                      [attr.cx]="point.x"
+                      [attr.cy]="point.y"
+                      r="1.25"
+                      [attr.fill]="point.reading.fire_logic.alarm ? 'rgba(248,113,113,0.95)' : 'rgba(125,211,252,0.95)'"
+                    ></circle>
+                  }
+                </svg>
+              </div>
+
+              <div class="mt-4 grid grid-cols-7 gap-2 sm:grid-cols-14">
+                @for (reading of orderedHistory(); track reading.id) {
+                  <div class="space-y-2 text-center">
+                    <div class="flex h-16 items-end rounded-[1rem] border border-white/8 bg-white/[0.03] px-1.5 py-1.5">
+                      <div
+                        class="w-full rounded-full"
+                        [style.height.%]="packetBarHeight(reading)"
+                        [ngClass]="packetBarTone(reading)"
+                      ></div>
+                    </div>
+                    <p class="text-[0.62rem] uppercase tracking-[0.18em] text-stone-500">
+                      {{ historyTimeLabel(reading.recorded_at) }}
+                    </p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+              <article class="metric-card">
+                <p class="metric-label">Current Severity</p>
+                <p class="metric-value">{{ latestReading()?.severity_score ?? 0 }}</p>
+                <p class="metric-subtext">Latest derived severity score from gas, flame, IR, and alarm logic.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">24h Average</p>
+                <p class="metric-value">{{ summary()?.metrics?.average_severity_last_24h ?? '--' }}</p>
+                <p class="metric-subtext">Average severity across the last 24 hours of stored packets.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">Alarm Window</p>
+                <p class="metric-value">{{ alarmWindowCount() }}</p>
+                <p class="metric-subtext">Alarm packets visible in the current live history window.</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">Trigger Mix</p>
+                <p class="metric-value text-[1.65rem] leading-tight">{{ triggerMix() }}</p>
+                <p class="metric-subtext">Most common trigger label across the recent packet ribbon.</p>
+              </article>
+            </div>
+          </div>
+        } @else {
+          <p class="mt-5 text-sm leading-7 text-stone-300">
+            Once readings arrive, this panel will draw a live severity curve and alarm ribbon from the latest packet window.
+          </p>
+        }
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-stone-400">Latest Reading</p>
+            <h2 class="mt-2 font-display text-2xl text-white">
+              {{ latestReading()?.device_id || 'Waiting for ESP32 data' }}
+            </h2>
+          </div>
+          @if (latestReading(); as reading) {
+            <span class="status-chip" [class.alert-chip]="reading.fire_logic.alarm">
+              {{ reading.fire_logic.alarm ? 'Alarm Active' : 'Nominal' }}
+            </span>
+          }
+        </div>
+
+        @if (latestReading(); as reading) {
+          <div class="mt-5 grid gap-4 md:grid-cols-2">
+            @for (sensor of sensorPanels(reading); track sensor.label) {
+              <div class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm text-stone-200">{{ sensor.label }}</p>
+                  <span class="rounded-full bg-white/5 px-3 py-1 text-xs text-stone-400">{{ sensor.digitalLabel }}</span>
+                </div>
+                <p class="mt-4 text-3xl font-semibold text-white">{{ sensor.analog }}</p>
+                <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div
+                    class="h-full rounded-full bg-gradient-to-r from-emerald-300 via-sky-300 to-orange-300"
+                    [style.width.%]="sensor.fill"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="mt-4 text-sm leading-7 text-stone-300">
+            The dashboard will populate as soon as the ESP32 posts sensor packets to the backend.
+          </p>
+        }
+      </section>
+    </div>
+
+    <div class="space-y-6">
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-amber-200/60">Alert Channel</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Admin Email Dispatch</h2>
+          </div>
+          <span [class]="fireAlertTone()">
+            {{ fireAlertLabel() }}
+          </span>
+        </div>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <article class="weather-card">
+            <p class="weather-label">Provider</p>
+            <p class="weather-value text-2xl">SMTP</p>
+          </article>
+          <article class="weather-card">
+            <p class="weather-label">Event Status</p>
+            <p class="weather-value text-2xl">{{ displayedFireEvent()?.status || 'waiting' }}</p>
+          </article>
+        </div>
+
+        <p class="mt-5 text-sm leading-7 text-stone-300">
+          {{ fireAlertSummaryText() }}
+        </p>
+
+        @if (displayedFireEvent()?.notes) {
+          <div class="mt-4 rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Dispatch Note</p>
+            <p class="mt-3 text-sm leading-7 text-stone-200">{{ displayedFireEvent()?.notes }}</p>
+          </div>
+        }
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-sky-200/60">Weather Context</p>
+            <h2 class="mt-2 font-display text-2xl text-white">
+              {{ summary()?.weather?.source_name || 'Weather sync pending' }}
+            </h2>
+          </div>
+          @if (summary()?.weather?.location_source) {
+            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+              {{ summary()?.weather?.location_source }}
+            </span>
+          }
+        </div>
+
+        @if (summary()?.weather; as weather) {
+          <div class="mt-5 grid gap-4 sm:grid-cols-2">
+            <article class="weather-card">
+              <p class="weather-label">Temperature</p>
+              <p class="weather-value">{{ weather.temperature ?? '--' }}<span class="text-base"> C</span></p>
+            </article>
+            <article class="weather-card">
+              <p class="weather-label">Humidity</p>
+              <p class="weather-value">{{ weather.relative_humidity ?? '--' }}<span class="text-base">%</span></p>
+            </article>
+            <article class="weather-card">
+              <p class="weather-label">Wind Speed</p>
+              <p class="weather-value">{{ weather.wind_speed ?? '--' }}<span class="text-base"> km/h</span></p>
+            </article>
+            <article class="weather-card">
+              <p class="weather-label">Wind Direction</p>
+              <p class="weather-value">{{ weather.wind_direction ?? '--' }}<span class="text-base"> deg</span></p>
+            </article>
+          </div>
+        } @else {
+          <p class="mt-4 text-sm leading-7 text-stone-300">
+            Save a forest map first so the backend can resolve a weather location and start caching snapshots.
+          </p>
+        }
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Automation Watch</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Background Jobs</h2>
+          </div>
+          <span class="status-chip" [class.alert-chip]="!automation()?.enabled">
+            {{ automation()?.enabled ? 'Active' : 'Disabled' }}
+          </span>
+        </div>
+
+        <p class="mt-5 text-sm leading-7 text-stone-300">
+          {{ automationSummaryText() }}
+        </p>
+
+        @if (automationJobs().length) {
+          <div class="mt-5 space-y-3">
+            @for (job of automationJobs(); track job.name) {
+              <article class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <p class="text-sm font-semibold text-white">{{ automationLabel(job.name) }}</p>
+                  <span [class]="automationTone(job.status)">
+                    {{ job.status }}
+                  </span>
+                </div>
+                <p class="mt-3 text-sm leading-7 text-stone-200">
+                  {{ job.detail || 'Waiting for first run.' }}
+                </p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-[1rem] border border-white/8 bg-white/[0.03] px-3 py-3">
+                    <p class="text-xs uppercase tracking-[0.22em] text-stone-400">Last Success</p>
+                    <p class="mt-2 text-sm text-stone-200">{{ job.last_success_at ? (job.last_success_at | date: 'medium') : 'Not yet' }}</p>
+                  </div>
+                  <div class="rounded-[1rem] border border-white/8 bg-white/[0.03] px-3 py-3">
+                    <p class="text-xs uppercase tracking-[0.22em] text-stone-400">Affected</p>
+                    <p class="mt-2 text-sm text-stone-200">{{ job.affected_count ?? 0 }}</p>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-cyan-200/60">Enterprise Fabric</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Live Transport + Observability</h2>
+          </div>
+          <a
+            *ngIf="observability()?.grafana_dashboard_url"
+            [href]="observability()?.grafana_dashboard_url"
+            target="_blank"
+            rel="noreferrer"
+            class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-stone-100 transition hover:border-cyan-300/30 hover:bg-white/10"
+          >
+            Open Grafana
+          </a>
+        </div>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <article class="weather-card">
+            <p class="weather-label">Live Transport</p>
+            <p class="weather-value text-2xl">{{ liveTransportLabel() }}</p>
+            <p class="mt-3 text-sm leading-7 text-stone-300">
+              {{ liveEventAt() ? ('Last frame ' + (liveEventAt() | date: 'mediumTime')) : 'Waiting for the first live frame.' }}
+            </p>
+          </article>
+          <article class="weather-card">
+            <p class="weather-label">Telemetry</p>
+            <p class="weather-value text-2xl">{{ observability()?.enabled ? 'Grafana Ready' : 'Standby' }}</p>
+            <p class="mt-3 text-sm leading-7 text-stone-300">
+              {{ observability()?.service_name || 'forest-fire-shield-api' }} / {{ observability()?.environment || 'development' }}
+            </p>
+          </article>
+        </div>
+
+        <div class="mt-4 rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+          <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Telemetry Note</p>
+          <p class="mt-3 text-sm leading-7 text-stone-200">
+            {{ observability()?.detail || 'OpenTelemetry exporters are idle until the observability stack is started.' }}
+          </p>
+        </div>
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Event State</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Fire Event Monitor</h2>
+          </div>
+          <span class="status-chip" [class.alert-chip]="summary()?.active_fire_event">
+            {{ summary()?.active_fire_event ? 'Event Open' : (summary()?.latest_fire_event ? 'Latest Event' : 'No Fire Event') }}
+          </span>
+        </div>
+
+        @if (displayedFireEvent(); as fireEvent) {
+          <div class="mt-5 grid gap-4">
+            <div class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Trigger Type</p>
+              <p class="mt-2 text-lg text-white">{{ fireEvent.trigger_type || 'unknown' }}</p>
+            </div>
+            <div class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Started</p>
+              <p class="mt-2 text-lg text-white">{{ fireEvent.started_at | date: 'medium' }}</p>
+            </div>
+            <div class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Max Severity</p>
+              <p class="mt-2 text-lg text-white">{{ fireEvent.max_severity ?? '--' }}</p>
+            </div>
+            <div class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Event Status</p>
+              <p class="mt-2 text-lg text-white">{{ fireEvent.status }}</p>
+            </div>
+          </div>
+        } @else {
+          <p class="mt-4 text-sm leading-7 text-stone-300">
+            No active fire event is open right now. When `alarm=true` arrives from the ESP32, the backend will start an event here.
+          </p>
+        }
+      </section>
+
+      <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/60">Recent Timeline</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Latest Packets</h2>
+          </div>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+            {{ history().length }} shown
+          </span>
+        </div>
+
+        <div class="mt-5 space-y-3">
+          @for (reading of history(); track reading.id) {
+            <article class="rounded-[1.4rem] border border-white/10 bg-[#08151d]/75 p-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm text-white">{{ reading.recorded_at | date: 'medium' }}</p>
+                  <p class="mt-1 text-xs uppercase tracking-[0.22em] text-stone-400">
+                    {{ reading.fire_logic.trigger || 'none' }} / severity {{ reading.severity_score }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span [class]="readingStatusTone(reading)">
+                    {{ reading.fire_logic.alarm ? 'Alarm' : (reading.severity_score >= 65 ? 'Elevated' : 'Normal') }}
+                  </span>
+                  <div class="h-2 w-28 overflow-hidden rounded-full bg-white/5">
+                    <div
+                      class="h-full rounded-full bg-gradient-to-r from-emerald-300 via-sky-300 to-orange-300"
+                      [style.width.%]="reading.severity_score"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 flex flex-wrap gap-2">
+                @if (activeSignals(reading).length) {
+                  @for (signal of activeSignals(reading); track signal) {
+                    <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-stone-200">
+                      {{ signal }}
+                    </span>
+                  }
+                } @else {
+                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-stone-400">
+                    No digital sensor trips in this packet
+                  </span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

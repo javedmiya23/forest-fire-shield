@@ -1,0 +1,91 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "BNMIT Demo Forest",
+        "admin_email": "admin@example.com",
+        "vegetation_type": "mixed_forest",
+        "tree_density": "high",
+        "canopy_density": "dense",
+        "fuel_load": "moderate",
+        "moisture_class": "dry",
+        "forest_zone": "south_sector"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.565344, 12.921104],
+            [77.569287, 12.920122],
+            [77.570091, 12.923554],
+            [77.566187, 12.924233],
+            [77.565344, 12.921104]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "esp32_sensor_point",
+        "device_id": "FFS_ESP32_01",
+        "sensor_type": "esp32"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.567727, 12.922253]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "road_type": "access road",
+        "name": "service_road"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.566200, 12.921300],
+          [77.568000, 12.922100],
+          [77.569600, 12.923100]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "water": "seasonal stream",
+        "name": "east_stream"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.566000, 12.923600],
+          [77.567300, 12.922700],
+          [77.568500, 12.921800]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "habitat_zone": "bird corridor",
+        "animal": "small mammals and birds"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.566900, 12.921900],
+            [77.568600, 12.921700],
+            [77.568400, 12.922700],
+            [77.567100, 12.922900],
+            [77.566900, 12.921900]
+          ]
+        ]
+      }
+    }
+  ]
+}

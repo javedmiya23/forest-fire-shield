@@ -1,0 +1,413 @@
+<section class="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
+  <div class="space-y-6">
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur-xl">
+      <p class="text-xs uppercase tracking-[0.3em] text-emerald-200/65">Forest Configuration</p>
+      <h1 class="mt-4 font-display text-4xl text-white sm:text-5xl">Forest Map Studio</h1>
+      <p class="mt-4 max-w-2xl text-base leading-8 text-stone-300">
+        Use a validated GeoJSON upload or walk through a guided forest builder. The system keeps the full uploaded map, checks compatibility, and previews the result before saving.
+      </p>
+
+      <div class="mt-6 inline-flex rounded-full border border-white/10 bg-[#08151d]/80 p-1">
+        <button
+          type="button"
+          class="rounded-full px-4 py-2 text-sm transition"
+          [class]="setupMode() === 'upload' ? 'bg-white text-slate-950' : 'text-stone-300 hover:text-white'"
+          (click)="switchMode('upload')"
+        >
+          Upload GeoJSON
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-4 py-2 text-sm transition"
+          [class]="setupMode() === 'builder' ? 'bg-white text-slate-950' : 'text-stone-300 hover:text-white'"
+          (click)="switchMode('builder')"
+        >
+          Build Your Forest Map
+        </button>
+      </div>
+    </section>
+
+    @if (setupMode() === 'upload') {
+      <section class="rounded-[2rem] border border-white/10 bg-[#08151d]/80 p-6 backdrop-blur-xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-orange-200/65">Upload Mode</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Validate Before Saving</h2>
+          </div>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+            Accepts `.geojson` and `.json`
+          </span>
+        </div>
+
+        <p class="mt-4 text-sm leading-7 text-stone-300">
+          The uploader checks whether the file contains a usable forest boundary, looks for a sensor point, and summarizes optional layers such as roads, water bodies, or wildlife zones.
+        </p>
+
+        <div class="mt-5 rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 p-5">
+          <label class="block text-sm text-stone-200">
+            <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">GeoJSON File</span>
+            <input
+              type="file"
+              accept=".json,.geojson,application/geo+json,application/json"
+              class="block w-full rounded-2xl border border-white/10 bg-[#071118] px-4 py-3 text-sm text-stone-200 file:mr-4 file:rounded-full file:border-0 file:bg-orange-300/15 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-orange-100"
+              (change)="onGeoJsonSelected($event)"
+            />
+          </label>
+
+          @if (selectedFileName()) {
+            <p class="mt-3 text-sm text-emerald-100">Selected: {{ selectedFileName() }}</p>
+          }
+
+          @if (validating()) {
+            <p class="mt-3 text-sm text-sky-100">Validating GeoJSON structure and feature layers...</p>
+          }
+        </div>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <label class="text-sm text-stone-200">
+            <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Forest Name Override</span>
+            <input
+              type="text"
+              [value]="forestForm.controls.name.value"
+              (input)="forestForm.controls.name.setValue(($any($event.target)).value)"
+              class="field-input"
+            />
+          </label>
+          <label class="text-sm text-stone-200">
+            <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Admin Email</span>
+            <input
+              type="email"
+              [value]="forestForm.controls.admin_email.value ?? ''"
+              (input)="forestForm.controls.admin_email.setValue(($any($event.target)).value)"
+              class="field-input"
+            />
+          </label>
+        </div>
+
+        @if (geoJsonValidation(); as validation) {
+          <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Compatibility Report</p>
+                <p class="mt-2 text-sm text-stone-200">{{ validation.message }}</p>
+              </div>
+              <span
+                class="rounded-full px-3 py-1 text-xs"
+                [class]="validation.is_compatible ? 'status-chip' : 'alert-chip status-chip'"
+              >
+                {{ validation.is_compatible ? 'Compatible' : 'Needs Changes' }}
+              </span>
+            </div>
+
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+              <div class="rounded-2xl border border-white/10 bg-[#071118] p-4">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Feature Counts</p>
+                <p class="mt-3 text-sm text-stone-200">
+                  {{ validation.summary.feature_count }} total features
+                </p>
+                <p class="mt-2 text-sm text-stone-300">
+                  {{ validation.summary.polygon_features }} polygons,
+                  {{ validation.summary.line_features }} lines,
+                  {{ validation.summary.point_features }} points
+                </p>
+              </div>
+
+              <div class="rounded-2xl border border-white/10 bg-[#071118] p-4">
+                <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Core Checks</p>
+                <p class="mt-3 text-sm text-stone-200">
+                  Boundary: {{ validation.summary.boundary_detected ? 'Found' : 'Missing' }}
+                </p>
+                <p class="mt-2 text-sm text-stone-300">
+                  Sensor point: {{ validation.summary.sensor_detected ? 'Found' : 'Not explicit' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Detected Thematic Layers</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                @for (layer of validation.summary.detected_layers; track layer) {
+                  <span class="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100">
+                    {{ layer.replaceAll('_', ' ') }}
+                  </span>
+                }
+                @if (!validation.summary.detected_layers.length) {
+                  <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+                    No optional thematic layers detected
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Property Keys Preview</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                @for (key of displayedPropertyKeys(); track key) {
+                  <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-200">
+                    {{ key }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            @if (validation.summary.missing_recommended_layers.length) {
+              <div class="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-50">
+                Recommended but not detected:
+                {{ validation.summary.missing_recommended_layers.join(', ').replaceAll('_', ' ') }}
+              </div>
+            }
+          </div>
+        }
+
+        <button
+          type="button"
+          class="mt-5 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-900/30 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="uploading() || !uploadReady()"
+          (click)="uploadGeoJson()"
+        >
+          {{ uploading() ? 'Uploading...' : 'Save Validated GeoJSON' }}
+        </button>
+      </section>
+    } @else {
+      <section class="rounded-[2rem] border border-white/10 bg-[#08151d]/80 p-6 backdrop-blur-xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.26em] text-emerald-200/65">Guided Builder</p>
+            <h2 class="mt-2 font-display text-2xl text-white">Step-By-Step Forest Creation</h2>
+          </div>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
+            Cleaner workflow
+          </span>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-3">
+          @for (step of builderSteps; track step.id) {
+            <button
+              type="button"
+              class="rounded-[1.4rem] border px-4 py-3 text-left transition"
+              [class]="builderStep() === step.id ? 'border-emerald-300/30 bg-emerald-300/10 text-white' : 'border-white/10 bg-white/5 text-stone-300 hover:text-white'"
+              (click)="setBuilderStep(step.id)"
+            >
+              <p class="text-xs uppercase tracking-[0.24em] opacity-70">Step {{ step.id }}</p>
+              <p class="mt-2 text-sm font-semibold">{{ step.title }}</p>
+            </button>
+          }
+        </div>
+
+        <form class="mt-6 space-y-5" [formGroup]="forestForm" (ngSubmit)="submitForestBuilder()">
+          @if (builderStep() === 1) {
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Forest Name</span>
+                <input formControlName="name" type="text" class="field-input" />
+              </label>
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Admin Email</span>
+                <input formControlName="admin_email" type="email" class="field-input" />
+              </label>
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Vegetation Type</span>
+                <input formControlName="vegetation_type" type="text" class="field-input" />
+              </label>
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Tree Density</span>
+                <select formControlName="tree_density" class="field-input">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Canopy Density</span>
+                <select formControlName="canopy_density" class="field-input">
+                  <option value="sparse">Sparse</option>
+                  <option value="medium">Medium</option>
+                  <option value="dense">Dense</option>
+                </select>
+              </label>
+              <label class="text-sm text-stone-200">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Fuel Load</span>
+                <select formControlName="fuel_load" class="field-input">
+                  <option value="low">Low</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label class="text-sm text-stone-200 sm:col-span-2">
+                <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Moisture Class</span>
+                <select formControlName="moisture_class" class="field-input">
+                  <option value="dry">Dry</option>
+                  <option value="normal">Normal</option>
+                  <option value="wet">Wet</option>
+                </select>
+              </label>
+            </div>
+          }
+
+          @if (builderStep() === 2) {
+            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+              <p class="text-xs uppercase tracking-[0.24em] text-stone-400">ESP32 Sensor Point</p>
+              <p class="mt-2 text-sm text-stone-200">
+                Enter the exact deployed board location. Weather and ignition origin will use this point.
+              </p>
+              <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <label class="text-sm text-stone-200">
+                  <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Latitude</span>
+                  <input formControlName="sensor_latitude" type="number" step="0.000001" class="field-input" />
+                </label>
+                <label class="text-sm text-stone-200">
+                  <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-400">Longitude</span>
+                  <input formControlName="sensor_longitude" type="number" step="0.000001" class="field-input" />
+                </label>
+              </div>
+            </div>
+          }
+
+          @if (builderStep() === 3) {
+            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Forest Boundary Points</p>
+                  <p class="mt-2 text-sm text-stone-200">Add points in order around the forest perimeter.</p>
+                </div>
+                <button
+                  type="button"
+                  class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-stone-200 transition hover:border-emerald-300/30 hover:text-white"
+                  (click)="addBoundaryPoint()"
+                >
+                  Add Point
+                </button>
+              </div>
+
+              <div formArrayName="boundaryPoints" class="mt-4 space-y-3">
+                @for (group of boundaryPoints.controls; track $index) {
+                  <div [formGroupName]="$index" class="grid gap-3 rounded-2xl border border-white/10 bg-[#071118] p-4 sm:grid-cols-[1fr_1fr_auto]">
+                    <label class="text-sm text-stone-200">
+                      <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-500">Latitude</span>
+                      <input formControlName="latitude" type="number" step="0.000001" class="field-input" />
+                    </label>
+                    <label class="text-sm text-stone-200">
+                      <span class="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-500">Longitude</span>
+                      <input formControlName="longitude" type="number" step="0.000001" class="field-input" />
+                    </label>
+                    <div class="flex items-end">
+                      <button
+                        type="button"
+                        class="rounded-full border border-red-300/20 bg-red-400/10 px-4 py-2 text-xs font-semibold text-red-100 transition hover:border-red-300/40"
+                        [disabled]="boundaryPoints.length <= 3"
+                        (click)="removeBoundaryPoint($index)"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:border-white/20"
+              [disabled]="builderStep() === 1"
+              (click)="previousBuilderStep()"
+            >
+              Previous
+            </button>
+
+            @if (builderStep() < builderSteps.length) {
+              <button
+                type="button"
+                class="rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-900/20 transition hover:-translate-y-0.5"
+                (click)="nextBuilderStep()"
+              >
+                Next Step
+              </button>
+            } @else {
+              <button
+                type="submit"
+                class="rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-900/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving() || forestForm.invalid"
+              >
+                {{ saving() ? 'Saving Forest...' : 'Save Forest Model' }}
+              </button>
+            }
+          </div>
+        </form>
+      </section>
+    }
+
+    @if (statusMessage()) {
+      <div class="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-50">
+        {{ statusMessage() }}
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm text-red-50">
+        {{ errorMessage() }}
+      </div>
+    }
+  </div>
+
+  <div class="space-y-6">
+    <app-forest-map
+      [title]="previewGeoJson() ? 'Forest Map Preview' : 'Awaiting Forest Map'"
+      [boundaryGeojson]="previewBoundary()"
+      [sourceGeojson]="previewGeoJson()"
+      [sensorLocation]="previewSensor()"
+    ></app-forest-map>
+
+    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.28em] text-stone-400">Current Forest</p>
+          <h2 class="mt-2 font-display text-2xl text-white">
+            {{ currentForest()?.name || 'No forest saved yet' }}
+          </h2>
+        </div>
+        @if (currentForest()) {
+          <span class="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100">
+            Saved in backend
+          </span>
+        }
+      </div>
+
+      @if (currentForest(); as forest) {
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/70 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Center Point</p>
+            <p class="mt-3 text-sm text-stone-200">{{ forest.center.latitude | number:'1.4-4' }}, {{ forest.center.longitude | number:'1.4-4' }}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/70 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Sensor Device</p>
+            <p class="mt-3 text-sm text-stone-200">{{ forest.device_id || 'Not linked yet' }}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/70 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Vegetation</p>
+            <p class="mt-3 text-sm text-stone-200">{{ forest.vegetation_type || 'Not set' }}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/70 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Fuel and Moisture</p>
+            <p class="mt-3 text-sm text-stone-200">{{ forest.fuel_load || 'n/a' }} / {{ forest.moisture_class || 'n/a' }}</p>
+          </div>
+        </div>
+
+        @if (forest.geojson_summary; as summary) {
+          <div class="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08151d]/70 p-4">
+            <p class="text-xs uppercase tracking-[0.24em] text-stone-400">Saved GeoJSON Summary</p>
+            <p class="mt-3 text-sm text-stone-200">
+              {{ summary.feature_count }} features with
+              {{ summary.detected_layers.length ? summary.detected_layers.join(', ').replaceAll('_', ' ') : 'no optional layers detected' }}.
+            </p>
+          </div>
+        }
+      } @else {
+        <p class="mt-4 text-sm leading-7 text-stone-300">
+          Save a forest model first. Once stored, the dashboard, weather layer, and simulation engine will use it automatically.
+        </p>
+      }
+    </section>
+  </div>
+</section>

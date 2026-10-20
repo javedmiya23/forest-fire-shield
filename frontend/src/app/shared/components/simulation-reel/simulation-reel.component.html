@@ -1,0 +1,122 @@
+<section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-[0.26em] text-orange-200/60">Simulation Reel</p>
+      <h2 class="mt-2 font-display text-3xl text-white">Cinematic Wildfire Export</h2>
+      <p class="mt-3 max-w-3xl text-sm leading-7 text-stone-300">
+        Generate a premium map-based animation for your demo: ignition pulse, weather context, wildlife risk zones, and the hour-by-hour fire envelope over the real forest.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-orange-300/35 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!hasRenderableScene() || exporting()"
+        (click)="togglePreview()"
+      >
+        {{ playing() ? 'Pause Reel' : 'Play Reel' }}
+      </button>
+      <button
+        type="button"
+        class="rounded-full bg-gradient-to-r from-orange-400 to-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-orange-900/30 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!hasRenderableScene() || exporting() || !exportSupported"
+        (click)="exportVideo()"
+      >
+        {{ exporting() ? 'Rendering WebM...' : 'Export WebM' }}
+      </button>
+      @if (downloadUrl(); as url) {
+        <a
+          [href]="url"
+          download="forest-fire-shield-simulation-reel.webm"
+          class="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-50 transition hover:bg-emerald-400/20"
+        >
+          Download Last Render
+        </a>
+      }
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+    <div class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#051118] shadow-2xl shadow-black/30">
+      <canvas #reelCanvas class="block aspect-video w-full bg-[#051118]"></canvas>
+    </div>
+
+    <div class="space-y-4">
+      <article class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/80 p-5">
+        <p class="text-xs uppercase tracking-[0.22em] text-stone-400">What The Reel Shows</p>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div class="rounded-[1.1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-stone-200">
+            Ignition point highlight at the ESP32 source.
+          </div>
+          <div class="rounded-[1.1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-stone-200">
+            Weather-driven wind panel for temperature, humidity, and spread direction.
+          </div>
+          <div class="rounded-[1.1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-stone-200">
+            Fire envelope growth across every simulated hour.
+          </div>
+          <div class="rounded-[1.1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-stone-200">
+            Wildlife risk pulses, water bodies, roads, and vegetation context from GeoJSON.
+          </div>
+        </div>
+      </article>
+
+      <article class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+        <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/80 p-5">
+          <p class="text-xs uppercase tracking-[0.22em] text-stone-400">Runtime</p>
+          <p class="mt-3 font-display text-3xl text-white">10 sec</p>
+          <p class="mt-2 text-sm leading-7 text-stone-300">Optimized for live demo playback and quick export without long waits.</p>
+        </div>
+        <div class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/80 p-5">
+          <p class="text-xs uppercase tracking-[0.22em] text-stone-400">Video Style</p>
+          <p class="mt-3 font-display text-3xl text-white">Cinematic GIS</p>
+          <p class="mt-2 text-sm leading-7 text-stone-300">Stylized wildfire intelligence motion, not fake movie-grade 3D characters.</p>
+        </div>
+      </article>
+
+      <article class="rounded-[1.5rem] border border-white/10 bg-[#08151d]/80 p-5">
+        <p class="text-xs uppercase tracking-[0.22em] text-stone-400">Render Inputs</p>
+        @if (simulation; as sim) {
+          <div class="mt-4 space-y-3 text-sm text-stone-200">
+            <div class="flex items-center justify-between gap-4">
+              <span>Steps available</span>
+              <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-100">{{ sim.steps.length }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span>Forecast temperature</span>
+              <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-100">{{ sim.weather?.temperature ?? '--' }} C</span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span>Forecast wind speed</span>
+              <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-100">{{ sim.weather?.wind_speed ?? '--' }} km/h</span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span>Wind push direction</span>
+              <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-100">{{ sim.weather?.wind_direction ?? sim.assumptions.wind_push_direction ?? '--' }} deg</span>
+            </div>
+          </div>
+        } @else {
+          <p class="mt-4 text-sm leading-7 text-stone-300">Once the backend produces a simulation, this card will show the exact inputs used in the reel.</p>
+        }
+      </article>
+
+      @if (!exportSupported) {
+        <article class="rounded-[1.5rem] border border-amber-300/20 bg-amber-400/10 p-5 text-sm leading-7 text-amber-50">
+          WebM export is not available in this browser right now. Preview playback still works, but export needs MediaRecorder support.
+        </article>
+      }
+
+      @if (statusMessage()) {
+        <article class="rounded-[1.5rem] border border-emerald-300/20 bg-emerald-400/10 p-5 text-sm leading-7 text-emerald-50">
+          {{ statusMessage() }}
+        </article>
+      }
+
+      @if (errorMessage()) {
+        <article class="rounded-[1.5rem] border border-red-300/20 bg-red-400/10 p-5 text-sm leading-7 text-red-50">
+          {{ errorMessage() }}
+        </article>
+      }
+    </div>
+  </div>
+</section>

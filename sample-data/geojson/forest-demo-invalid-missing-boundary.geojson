@@ -1,0 +1,32 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "esp32_sensor_point",
+        "device_id": "FFS_ESP32_01",
+        "sensor_type": "esp32"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.567727, 12.922253]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "road_type": "access road",
+        "name": "service_road"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.566200, 12.921300],
+          [77.568000, 12.922100],
+          [77.569600, 12.923100]
+        ]
+      }
+    }
+  ]
+}
